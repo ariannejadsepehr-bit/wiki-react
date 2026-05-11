@@ -1,0 +1,145 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
+:root {
+  --font-persian: 'Vazirmatn', 'Tahoma', 'Arial', sans-serif;
+
+  --background: 0 0% 100%;
+  --foreground: 220 13% 10%;
+  --card: 0 0% 100%;
+  --card-foreground: 220 13% 10%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 220 13% 10%;
+  --primary: 210 100% 30%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 210 20% 96%;
+  --secondary-foreground: 220 13% 10%;
+  --muted: 210 20% 96%;
+  --muted-foreground: 220 9% 46%;
+  --accent: 210 20% 94%;
+  --accent-foreground: 220 13% 10%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 214 20% 90%;
+  --input: 214 20% 90%;
+  --ring: 210 100% 30%;
+  --radius: 0.625rem;
+}
+
+.dark {
+  --background: 220 13% 8%;
+  --foreground: 210 40% 98%;
+  --card: 220 13% 10%;
+  --card-foreground: 210 40% 98%;
+  --popover: 220 13% 10%;
+  --popover-foreground: 210 40% 98%;
+  --primary: 210 100% 55%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 220 13% 16%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 220 13% 16%;
+  --muted-foreground: 215 20% 65%;
+  --accent: 220 13% 18%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 62% 30%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 220 13% 18%;
+  --input: 220 13% 18%;
+  --ring: 210 100% 55%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+    box-sizing: border-box;
+  }
+
+  html {
+    direction: rtl;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-persian);
+    text-rendering: optimizeLegibility;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-persian);
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  p { line-height: 1.75; }
+
+  input, textarea, select {
+    font-family: var(--font-persian) !important;
+  }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: hsl(var(--secondary)); }
+  ::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground)); }
+}
+
+@layer components {
+  .container-wiki {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .card-wiki {
+    @apply bg-card rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow duration-200;
+  }
+
+  .badge-verified {
+    @apply inline-flex items-center gap-1 bg-blue-50 text-blue-700 border border-blue-200 text-xs font-medium px-2 py-0.5 rounded-full;
+  }
+
+  .badge-premium {
+    @apply inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 text-xs font-medium px-2 py-0.5 rounded-full;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-l from-blue-600 to-blue-900 bg-clip-text text-transparent;
+  }
+
+  .hero-gradient {
+    background: linear-gradient(135deg, #003d8c 0%, #0066cc 40%, #1a8fff 100%);
+  }
+
+  .search-input {
+    @apply w-full h-14 bg-white dark:bg-card border border-border rounded-xl px-5 text-base placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-150;
+    font-family: var(--font-persian);
+  }
+
+  .skeleton {
+    @apply animate-pulse bg-muted rounded-lg;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  .animate-fade-in { animation: fadeIn 0.3s ease-in-out; }
+  .animate-slide-up { animation: slideUp 0.4s ease-out; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.star-filled { color: #f59e0b; }
+.star-empty { color: #d1d5db; }
