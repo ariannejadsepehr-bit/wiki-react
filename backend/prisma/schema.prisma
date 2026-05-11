@@ -1,0 +1,510 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================
+// ENUMS
+// ============================
+
+enum UserRole {
+  guest
+  user
+  business_owner
+  editor
+  seo_manager
+  admin
+  super_admin
+}
+
+enum BusinessStatus {
+  pending
+  active
+  suspended
+  rejected
+  draft
+}
+
+enum SubscriptionPlan {
+  free
+  basic
+  premium
+  enterprise
+}
+
+enum SubscriptionStatus {
+  active
+  expired
+  cancelled
+  pending
+}
+
+enum PaymentStatus {
+  pending
+  completed
+  failed
+  refunded
+}
+
+enum PaymentGateway {
+  zarinpal
+  idpay
+  nextpay
+}
+
+enum LeadStatus {
+  new
+  contacted
+  converted
+  closed
+}
+
+enum SeoPageStatus {
+  draft
+  published
+  archived
+}
+
+// ============================
+// MODELS
+// ============================
+
+model User {
+  id             String    @id @default(uuid()) @db.Uuid
+  email          String    @unique
+  passwordHash   String    @map("password_hash")
+  fullName       String?   @map("full_name")
+  phone          String?   @unique
+  avatarUrl      String?   @map("avatar_url")
+  role           UserRole  @default(user)
+  isVerified     Boolean   @default(false) @map("is_verified")
+  emailVerified  Boolean   @default(false) @map("email_verified")
+  phoneVerified  Boolean   @default(false) @map("phone_verified")
+  bio            String?
+  website        String?
+  refreshToken   String?   @map("refresh_token")
+  lastLoginAt    DateTime? @map("last_login_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  businesses     Business[]
+  reviews        Review[]
+  payments       Payment[]
+  leads         Lead[]
+  subscriptions  Subscription[]
+
+  @@map("users")
+}
+
+model Province {
+  id        Int      @id @default(autoincrement())
+  name      String
+  nameEn    String?  @map("name_en")
+  slug      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+
+  cities    City[]
+  businesses Business[]
+
+  @@map("provinces")
+}
+
+model City {
+  id         Int      @id @default(autoincrement())
+  provinceId Int      @map("province_id")
+  name       String
+  nameEn     String?  @map("name_en")
+  slug       String   @unique
+  latitude   Decimal? @db.Decimal(10, 8)
+  longitude  Decimal? @db.Decimal(11, 8)
+  isMajor    Boolean  @default(false) @map("is_major")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  province   Province @relation(fields: [provinceId], references: [id], onDelete: Cascade)
+  businesses Business[]
+
+  @@index([provinceId])
+  @@map("cities")
+}
+
+model Category {
+  id            Int       @id @default(autoincrement())
+  parentId      Int?      @map("parent_id")
+  name          String
+  nameEn        String?   @map("name_en")
+  slug          String    @unique
+  description   String?
+  icon          String?
+  imageUrl      String?   @map("image_url")
+  color         String    @default("#0066CC")
+  isFeatured    Boolean   @default(false) @map("is_featured")
+  sortOrder     Int       @default(0) @map("sort_order")
+  seoTitle      String?   @map("seo_title")
+  seoDescription String?  @map("seo_description")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  parent        Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children      Category[] @relation("CategoryHierarchy")
+  businesses    BusinessCategory[]
+
+  @@index([parentId])
+  @@map("categories")
+}
+
+model Business {
+  id                   String          @id @default(uuid()) @db.Uuid
+  ownerId              String?         @map("owner_id") @db.Uuid
+  name                 String
+  nameEn               String?         @map("name_en")
+  slug                 String          @unique
+  description          String?
+  shortDescription     String?         @map("short_description")
+  status               BusinessStatus  @default(pending)
+  isFeatured           Boolean         @default(false) @map("is_featured")
+  isVerified           Boolean         @default(false) @map("is_verified")
+  isClaimed            Boolean         @default(false) @map("is_claimed")
+
+  cityId               Int?            @map("city_id")
+  provinceId           Int?            @map("province_id")
+  address              String?
+  postalCode           String?         @map("postal_code")
+  latitude             Decimal?        @db.Decimal(10, 8)
+  longitude            Decimal?        @db.Decimal(11, 8)
+
+  phone                String?
+  phone2               String?
+  whatsapp             String?
+  email                String?
+  website              String?
+
+  instagram            String?
+  telegram             String?
+  linkedin             String?
+  twitter              String?
+
+  logoUrl              String?         @map("logo_url")
+  coverUrl             String?         @map("cover_url")
+
+  foundedYear          Int?            @map("founded_year")
+  employeeCount        String?         @map("employee_count")
+  licenseNumber        String?         @map("license_number")
+
+  seoTitle             String?         @map("seo_title")
+  seoDescription       String?         @map("seo_description")
+
+  reviewCount          Int             @default(0) @map("review_count")
+  avgRating            Decimal         @default(0) @db.Decimal(3, 2) @map("avg_rating")
+  viewCount            Int             @default(0) @map("view_count")
+  leadCount            Int             @default(0) @map("lead_count")
+  aiScore              Decimal         @default(0) @db.Decimal(5, 2) @map("ai_score")
+  rankingScore         Decimal         @default(0) @db.Decimal(10, 4) @map("ranking_score")
+
+  subscriptionPlan     SubscriptionPlan @default(free) @map("subscription_plan")
+  subscriptionExpiresAt DateTime?      @map("subscription_expires_at")
+
+  createdAt            DateTime        @default(now()) @map("created_at")
+  updatedAt            DateTime        @updatedAt @map("updated_at")
+
+  owner                User?           @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  city                 City?           @relation(fields: [cityId], references: [id], onDelete: SetNull)
+  province             Province?       @relation(fields: [provinceId], references: [id], onDelete: SetNull)
+  categories           BusinessCategory[]
+  branches             BusinessBranch[]
+  services             BusinessService[]
+  hours                BusinessHour[]
+  gallery              BusinessGallery[]
+  faqs                 BusinessFaq[]
+  reviews              Review[]
+  subscriptions        Subscription[]
+  leads                Lead[]
+  analytics            AnalyticsEvent[]
+
+  @@index([cityId])
+  @@index([provinceId])
+  @@index([status])
+  @@index([isFeatured])
+  @@index([rankingScore])
+  @@index([slug])
+  @@index([ownerId])
+  @@map("businesses")
+}
+
+model BusinessCategory {
+  businessId String   @map("business_id") @db.Uuid
+  categoryId Int      @map("category_id")
+  isPrimary  Boolean  @default(false) @map("is_primary")
+
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([businessId, categoryId])
+  @@map("business_categories")
+}
+
+model BusinessBranch {
+  id         String   @id @default(uuid()) @db.Uuid
+  businessId String   @map("business_id") @db.Uuid
+  name       String
+  address    String?
+  cityId     Int?     @map("city_id")
+  phone      String?
+  latitude   Decimal? @db.Decimal(10, 8)
+  longitude  Decimal? @db.Decimal(11, 8)
+  isMain     Boolean  @default(false) @map("is_main")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@map("business_branches")
+}
+
+model BusinessService {
+  id          String   @id @default(uuid()) @db.Uuid
+  businessId  String   @map("business_id") @db.Uuid
+  name        String
+  description String?
+  price       String?
+  priceUnit   String?  @map("price_unit")
+  duration    String?
+  isFeatured  Boolean  @default(false) @map("is_featured")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@map("business_services")
+}
+
+model BusinessHour {
+  id         String   @id @default(uuid()) @db.Uuid
+  businessId String   @map("business_id") @db.Uuid
+  dayOfWeek  Int
+  openTime   String?
+  closeTime  String?
+  isClosed   Boolean  @default(false) @map("is_closed")
+
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, dayOfWeek])
+  @@index([businessId])
+  @@map("business_hours")
+}
+
+model BusinessGallery {
+  id           String   @id @default(uuid()) @db.Uuid
+  businessId   String   @map("business_id") @db.Uuid
+  url          String
+  thumbnailUrl String?  @map("thumbnail_url")
+  type         String   @default("image")
+  title        String?
+  altText      String?  @map("alt_text")
+  sortOrder    Int      @default(0) @map("sort_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  business     Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@map("business_gallery")
+}
+
+model BusinessFaq {
+  id         String   @id @default(uuid()) @db.Uuid
+  businessId String   @map("business_id") @db.Uuid
+  question   String
+  answer     String
+  sortOrder  Int      @default(0) @map("sort_order")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@map("business_faqs")
+}
+
+model Review {
+  id          String   @id @default(uuid()) @db.Uuid
+  businessId  String   @map("business_id") @db.Uuid
+  userId      String?  @map("user_id") @db.Uuid
+  rating      Int
+  title       String?
+  body        String?
+  isVerified  Boolean  @default(false) @map("is_verified")
+  isApproved  Boolean  @default(true) @map("is_approved")
+  isSpam      Boolean  @default(false) @map("is_spam")
+  spamScore  Decimal  @default(0) @db.Decimal(4, 3) @map("spam_score")
+  helpfulCount Int    @default(0) @map("helpful_count")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  responses   ReviewResponse[]
+
+  @@index([businessId])
+  @@index([isApproved, isSpam])
+  @@map("reviews")
+}
+
+model ReviewResponse {
+  id         String   @id @default(uuid()) @db.Uuid
+  reviewId   String   @map("review_id") @db.Uuid
+  businessId String   @map("business_id") @db.Uuid
+  body       String
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  review     Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@index([reviewId])
+  @@map("review_responses")
+}
+
+model SeoPage {
+  id              String        @id @default(uuid()) @db.Uuid
+  title           String
+  slug            String        @unique
+  h1              String
+  metaTitle       String?       @map("meta_title")
+  metaDescription String?       @map("meta_description")
+  canonicalUrl    String?       @map("canonical_url")
+  intro           String?
+  content         String?
+  faq             Json          @default("[]")
+  schemaData      Json          @default("{}") @map("schema_data")
+  status          SeoPageStatus @default(draft)
+  categoryId      Int?          @map("category_id")
+  cityId          Int?          @map("city_id")
+  provinceId      Int?          @map("province_id")
+  viewCount       Int           @default(0) @map("view_count")
+  isAiGenerated   Boolean       @default(false) @map("is_ai_generated")
+  aiModel         String?       @map("ai_model")
+  lastGeneratedAt DateTime?     @map("last_generated_at")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  @@index([slug])
+  @@index([cityId, categoryId])
+  @@index([status])
+  @@map("seo_pages")
+}
+
+model Subscription {
+  id         String             @id @default(uuid()) @db.Uuid
+  businessId String             @map("business_id") @db.Uuid
+  plan       SubscriptionPlan
+  status     SubscriptionStatus @default(pending)
+  startedAt  DateTime?          @map("started_at")
+  expiresAt  DateTime?          @map("expires_at")
+  price      Int
+  createdAt  DateTime           @default(now()) @map("created_at")
+  updatedAt  DateTime           @updatedAt @map("updated_at")
+
+  business   Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  payments   Payment[]
+
+  @@index([businessId])
+  @@map("subscriptions")
+}
+
+model Payment {
+  id             String         @id @default(uuid()) @db.Uuid
+  userId         String?        @map("user_id") @db.Uuid
+  businessId     String?        @map("business_id") @db.Uuid
+  subscriptionId String?        @map("subscription_id") @db.Uuid
+  amount         Int
+  currency       String         @default("IRR")
+  gateway        PaymentGateway
+  gatewayRef     String?        @map("gateway_ref")
+  gatewayTrackId String?        @map("gateway_track_id")
+  status         PaymentStatus  @default(pending)
+  description    String?
+  metadata       Json           @default("{}")
+  paidAt         DateTime?      @map("paid_at")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  user           User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  business       Business?      @relation(fields: [businessId], references: [id], onDelete: SetNull)
+  subscription   Subscription?  @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([businessId])
+  @@map("payments")
+}
+
+model Lead {
+  id          String     @id @default(uuid()) @db.Uuid
+  businessId  String     @map("business_id") @db.Uuid
+  userId      String?    @map("user_id") @db.Uuid
+  name        String?
+  phone       String?
+  email       String?
+  message     String?
+  type        String     @default("contact")
+  status      LeadStatus @default(new)
+  sourceUrl   String?    @map("source_url")
+  utmSource   String?    @map("utm_source")
+  utmMedium   String?    @map("utm_medium")
+  utmCampaign String?    @map("utm_campaign")
+  ipAddress   String?    @map("ip_address")
+  createdAt   DateTime   @default(now()) @map("created_at")
+
+  business    Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user        User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([businessId])
+  @@map("leads")
+}
+
+model AnalyticsEvent {
+  id          String   @id @default(uuid()) @db.Uuid
+  businessId  String?  @map("business_id") @db.Uuid
+  seoPageId   String?  @map("seo_page_id") @db.Uuid
+  eventType   String
+  userId      String?  @map("user_id") @db.Uuid
+  sessionId   String?  @map("session_id")
+  referrer    String?
+  userAgent   String?  @map("user_agent")
+  ipAddress   String?  @map("ip_address")
+  metadata    Json     @default("{}")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([businessId])
+  @@index([createdAt])
+  @@map("analytics_events")
+}
+
+model AiContent {
+  id          String   @id @default(uuid()) @db.Uuid
+  entityType  String
+  entityId    String
+  contentType String
+  content     String
+  model       String?
+  tokensUsed  Int?     @map("tokens_used")
+  isApproved  Boolean  @default(false) @map("is_approved")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([entityType, entityId])
+  @@map("ai_content")
+}
+
+model Redirect {
+  id         String   @id @default(uuid()) @db.Uuid
+  fromPath   String   @unique @map("from_path")
+  toPath     String   @map("to_path")
+  statusCode Int      @default(301) @map("status_code")
+  isActive   Boolean  @default(true) @map("is_active")
+  createdBy  String?  @map("created_by") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("redirects")
+}

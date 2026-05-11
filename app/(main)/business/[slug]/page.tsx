@@ -8,7 +8,7 @@ import {
 import { StarRating } from '@/components/shared/StarRating';
 
 interface PageProps {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 // Mock data - in production this comes from Supabase
@@ -68,6 +68,7 @@ const mockBusiness = {
 };
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { slug } = await params;
   return {
     title: `${mockBusiness.name} | وکیل تهران`,
     description: mockBusiness.short_description,
@@ -77,11 +78,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       images: [mockBusiness.cover_url],
       type: 'website',
     },
-    alternates: { canonical: `https://wikibehtarin.com/business/${params.slug}` },
+    alternates: { canonical: `https://wikibehtarin.com/business/${slug}` },
   };
 }
 
-export default function BusinessProfilePage({ params }: PageProps) {
+export default async function BusinessProfilePage({ params }: PageProps) {
   const biz = mockBusiness;
 
   const jsonLd = {
