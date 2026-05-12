@@ -83,6 +83,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function BusinessProfilePage({ params }: PageProps) {
+  await params;
   const biz = mockBusiness;
 
   const jsonLd = {
